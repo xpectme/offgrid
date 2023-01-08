@@ -1,7 +1,7 @@
 {
   "tasks": {
     "bundle": "deno bundle -c deno.jsonc main.ts dest/offgrid.js",
-    "dev": "deno run --watch main.ts"
+    "watch": "deno bundle -c deno.jsonc --watch main.ts dest/offgrid.js"
   },
   "compilerOptions": {
     "lib": [
