@@ -1,24 +1,18 @@
 {
   "tasks": {
+    "bundle": "deno bundle -c deno.jsonc main.ts dest/offgrid.js",
     "dev": "deno run --watch main.ts"
   },
   "compilerOptions": {
-    "target": "esnext",
-    "strict": true,
     "lib": [
       "dom",
       "dom.iterable",
       "dom.asynciterable",
-      "webworker",
-      // "deno.ns",
-      // "deno.unstable",
-      "deno.window"
-      // "deno.worker"
+      "deno.ns",
+      "deno.unstable"
     ],
-    "module": "esnext",
     "types": [
       "./types/global.d.ts",
-      "./types/tiny-request-router.d.ts"
     ]
   }
 }

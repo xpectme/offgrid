@@ -1,11 +1,11 @@
-import { Method, Router } from "../deps.ts";
+import { Router } from "../deps.ts";
 import { Context } from "./application/Context.ts";
 import { Handler } from "./application/Handler.ts";
 import { HttpError } from "./application/HttpError.ts";
 import { Renderer } from "./application/Renderer.ts";
 import { Status } from "./application/Status.ts";
 
-export class Application extends Router<Handler> {
+export class Application extends Router {
   #errorRoutes = new Map<Status, Handler>();
   #renderer!: Renderer;
 
@@ -31,7 +31,7 @@ export class Application extends Router<Handler> {
   listen(event: FetchEvent) {
     const request = event.request;
     const { pathname } = new URL(request.url);
-    const match = this.match(request.method as Method, pathname);
+    const match = this.match(request.method, pathname);
 
     if (match) {
       const context = new Context(match.params, request, this.#renderer);

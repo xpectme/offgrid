@@ -1,4 +1,3 @@
-import { Params } from "../../deps.ts";
 import { AppResponse } from "./AppResponse.ts";
 import { HttpError } from "./HttpError.ts";
 import { Renderer } from "./Renderer.ts";
@@ -6,14 +5,14 @@ import { Status } from "./Status.ts";
 import { rendererDefault } from "./rendererDefault.ts";
 
 export class Context<State = Record<string, unknown>> {
-  params: Params;
+  params: Record<string, string>;
   request: Request;
   response: AppResponse = {};
   state = {} as State;
   #renderer: Renderer;
 
   constructor(
-    params: Params,
+    params: Record<string, string>,
     request: Request,
     renderer?: Renderer,
   ) {
