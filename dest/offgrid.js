@@ -2,168 +2,6 @@
 // deno-lint-ignore-file
 // This code was bundled using `deno bundle` and it's not recommended to edit it manually
 
-class DeviceInfoService {
-    #broadcast = new BroadcastChannel("device-info");
-    #deviceInfo = {
-        gps: null,
-        motion: {
-            acceleration: null,
-            accelerationIncludingGravity: null,
-            rotationRate: null,
-            interval: 0,
-            speed: null,
-            speedGravity: null
-        },
-        orientation: null,
-        onlineState: navigator.onLine,
-        battery: null,
-        network: null
-    };
-    get deviceInfo() {
-        return this.#deviceInfo;
-    }
-    #options = {
-        broadcastInterval: 100,
-        gps: {
-            enableHighAccuracy: true,
-            maximumAge: 0,
-            timeout: 5000
-        }
-    };
-    #battery = null;
-    #gpsWatchId = null;
-    #broadcastIntervalId = null;
-    constructor(options = {}){
-        this.#options = {
-            ...this.#options,
-            ...options
-        };
-    }
-    #gpsSuccess = (position)=>{
-        this.#deviceInfo.gps = {
-            ...position.coords
-        };
-    };
-    #gpsError = (error)=>{
-        console.error(error);
-    };
-    #deviceOrientation = (event)=>{
-        if (event.alpha !== null && event.beta !== null && event.gamma !== null) {
-            this.#deviceInfo.orientation = {
-                alpha: event.webkitCompassHeading || event.alpha,
-                beta: event.beta,
-                gamma: event.gamma
-            };
-        }
-    };
-    #deviceMotion = (event)=>{
-        const { acceleration , accelerationIncludingGravity , rotationRate , interval  } = event;
-        if (acceleration) {
-            const { x , y , z  } = acceleration;
-            if (x !== null && y !== null && z !== null) {
-                this.#deviceInfo.motion.acceleration = {
-                    x,
-                    y,
-                    z
-                };
-            }
-        }
-        if (accelerationIncludingGravity) {
-            const { x: x1 , y: y1 , z: z1  } = accelerationIncludingGravity;
-            if (x1 !== null && y1 !== null && z1 !== null) {
-                this.#deviceInfo.motion.accelerationIncludingGravity = {
-                    x: x1,
-                    y: y1,
-                    z: z1
-                };
-            }
-        }
-        if (rotationRate) {
-            const { alpha , beta , gamma  } = rotationRate;
-            if (alpha !== null && beta !== null && gamma !== null) {
-                this.#deviceInfo.motion.rotationRate = {
-                    alpha,
-                    beta,
-                    gamma
-                };
-            }
-        }
-        if (interval) {
-            this.#deviceInfo.motion.interval = interval;
-        }
-    };
-    #onlineState = ()=>{
-        this.#deviceInfo.onlineState = navigator.onLine;
-    };
-    #batteryChange = ()=>{
-        if (this.#battery) {
-            this.#deviceInfo.battery = {
-                battery: this.#battery.level,
-                charging: this.#battery.charging
-            };
-        }
-    };
-    #connectionChange = ()=>{
-        this.#deviceInfo.network = {
-            ...navigator.connection
-        };
-    };
-    start() {
-        this.#gpsWatchId = navigator.geolocation.watchPosition(this.#gpsSuccess, this.#gpsError, this.#options.gps);
-        globalThis.addEventListener("deviceorientation", this.#deviceOrientation);
-        globalThis.addEventListener("devicemotion", this.#deviceMotion);
-        globalThis.addEventListener("online", this.#onlineState);
-        globalThis.addEventListener("offline", this.#onlineState);
-        if ("getBattery" in globalThis.navigator) {
-            globalThis.navigator.getBattery().then((battery)=>{
-                this.#battery = battery;
-                this.#deviceInfo.battery = {
-                    battery: battery.level,
-                    charging: battery.charging
-                };
-                battery.addEventListener("levelchange", this.#batteryChange);
-                battery.addEventListener("chargingchange", this.#batteryChange);
-                battery.addEventListener("dischargingtimechange", this.#batteryChange);
-                battery.addEventListener("chargingtimechange", this.#batteryChange);
-            });
-        }
-        if ("connection" in globalThis.navigator) {
-            navigator.connection.addEventListener("change", this.#connectionChange);
-        }
-        this.#broadcastIntervalId = setInterval(()=>{
-            this.#broadcast.postMessage(this.#deviceInfo);
-        }, this.#options.broadcastInterval);
-    }
-    stop() {
-        if (this.#gpsWatchId !== null) {
-            navigator.geolocation.clearWatch(this.#gpsWatchId);
-            this.#gpsWatchId = null;
-        }
-        globalThis.removeEventListener("deviceorientation", this.#deviceOrientation);
-        globalThis.removeEventListener("devicemotion", this.#deviceMotion);
-        globalThis.removeEventListener("online", this.#onlineState);
-        globalThis.removeEventListener("offline", this.#onlineState);
-        if (this.#battery) {
-            this.#battery.removeEventListener("levelchange", this.#batteryChange);
-            this.#battery.removeEventListener("chargingchange", this.#batteryChange);
-            this.#battery.removeEventListener("dischargingtimechange", this.#batteryChange);
-            this.#battery.removeEventListener("chargingtimechange", this.#batteryChange);
-            this.#battery = null;
-        }
-        if ("connection" in globalThis.navigator) {
-            navigator.connection.removeEventListener("change", this.#connectionChange);
-        }
-        if (this.#broadcastIntervalId !== null) {
-            clearInterval(this.#broadcastIntervalId);
-            this.#broadcastIntervalId = null;
-        }
-    }
-}
-function deviceBroadcast(options) {
-    return new DeviceInfoService(options);
-}
-export { DeviceInfoService as DeviceInfoService };
-export { deviceBroadcast as deviceBroadcast };
 var __assign = function() {
     __assign = Object.assign || function __assign(t) {
         for(var s, i = 1, n = arguments.length; i < n; i++){
@@ -607,28 +445,6 @@ class Context {
     render(template, data = {}) {
         return this.#renderer(template, data, this);
     }
-    plain(text) {
-        const headers = new Headers(this.response.headers);
-        if (headers.get("Content-Type") === null) {
-            headers.set("Content-Type", "text/plain");
-        }
-        const status = this.response.status ?? Status.OK;
-        return new Response(text, {
-            headers,
-            status
-        });
-    }
-    json(data) {
-        const headers = new Headers(this.response.headers);
-        if (headers.get("Content-Type") === null) {
-            headers.set("Content-Type", "application/json");
-        }
-        const status = this.response.status ?? Status.OK;
-        return new Response(JSON.stringify(data), {
-            headers,
-            status
-        });
-    }
     assert(condition, status, message) {
         if (!condition) {
             throw new HttpError(status, message);
@@ -642,13 +458,28 @@ export { Context as Context };
 class Application extends Router {
     #errorRoutes = new Map();
     #renderer;
+    #logger = console;
+    debug;
+    info;
+    warn;
+    error;
+    trace;
     get errorRoutes() {
         return this.#errorRoutes;
     }
     constructor(){
         super();
+        const log = (method)=>(...args)=>this.#logger[method](...args);
+        this.debug = log("log");
+        this.info = log("info");
+        this.warn = log("warn");
+        this.error = log("error");
+        this.trace = log("trace");
     }
-    renderEngine(renderer) {
+    setLogger(logger) {
+        this.#logger = logger;
+    }
+    setRenderEngine(renderer) {
         this.#renderer = renderer;
     }
     handleError(status, handler) {
@@ -662,16 +493,26 @@ class Application extends Router {
             const context = new Context(match.params, request, this.#renderer);
             event.respondWith((async ()=>{
                 try {
+                    this.info(`DONE: ${match.method} ${match.path}`, match.params);
                     const response = await match.handler(context);
                     return response;
-                } catch (error) {
-                    const handler = error instanceof HttpError ? this.errorRoutes.get(error.status) : this.errorRoutes.get(Status.InternalServerError);
+                } catch (error1) {
+                    this.warn(`FAIL: ${match.method} ${match.path}`, match.params);
+                    const handler = error1 instanceof HttpError ? this.errorRoutes.get(error1.status) : this.errorRoutes.get(Status.InternalServerError);
                     if (handler) {
-                        context.state.error = error;
-                        return handler(context);
+                        context.state.error = error1;
+                        try {
+                            return await handler(context);
+                        } catch (error) {
+                            this.error(`Error handler failed to respond!`);
+                            this.trace(error);
+                            return new Response(error.message, {
+                                status: Status.InternalServerError
+                            });
+                        }
                     }
-                    return new Response(error.message, {
-                        status: error.status
+                    return new Response(error1.message, {
+                        status: error1.status
                     });
                 }
             })());

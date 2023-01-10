@@ -8,6 +8,13 @@ import { Status } from "./application/Status.ts";
 export class Application extends Router {
   #errorRoutes = new Map<Status, Handler>();
   #renderer!: Renderer;
+  #logger = console;
+
+  debug: (...args: unknown[]) => void;
+  info: (...args: unknown[]) => void;
+  warn: (...args: unknown[]) => void;
+  error: (...args: unknown[]) => void;
+  trace: (...args: unknown[]) => void;
 
   get errorRoutes() {
     return this.#errorRoutes;
@@ -15,9 +22,21 @@ export class Application extends Router {
 
   constructor() {
     super();
+    const log =
+      (method: "log" | "info" | "warn" | "error" | "trace") =>
+      (...args: unknown[]) => this.#logger[method](...args);
+    this.debug = log("log");
+    this.info = log("info");
+    this.warn = log("warn");
+    this.error = log("error");
+    this.trace = log("trace");
   }
 
-  renderEngine(renderer: Renderer) {
+  setLogger(logger: Console) {
+    this.#logger = logger;
+  }
+
+  setRenderEngine(renderer: Renderer) {
     this.#renderer = renderer as Renderer;
   }
 
@@ -35,13 +54,16 @@ export class Application extends Router {
 
     if (match) {
       const context = new Context(match.params, request, this.#renderer);
-
       event.respondWith((async () => {
         try {
+          this.info(`DONE: ${match.method} ${match.path}`, match.params);
+
           // call the route handler
           const response = await match.handler(context);
           return response;
         } catch (error) {
+          this.warn(`FAIL: ${match.method} ${match.path}`, match.params);
+
           // get the route handler for the error status
           const handler = error instanceof HttpError
             ? this.errorRoutes.get(error.status)
@@ -53,7 +75,16 @@ export class Application extends Router {
             (context.state as any).error = error;
 
             // call the handler
-            return handler(context);
+            try {
+              return await handler(context);
+            } catch (error) {
+              this.error(`Error handler failed to respond!`);
+              this.trace(error);
+              // if the handler throws, return a generic error response
+              return new Response(error.message, {
+                status: Status.InternalServerError,
+              });
+            }
           }
 
           // otherwise, return a generic error response

@@ -1,5 +1,3 @@
-export * from "./interfaces/DeviceInfo.ts";
-export * from "./lib/DeviceInfoService.ts";
 export * from "./lib/Application.ts";
 export * from "./lib/application/AppResponse.ts";
 export * from "./lib/application/Context.ts";

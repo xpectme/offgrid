@@ -5,5 +5,5 @@ export interface Renderer {
     template: string,
     data: Record<string, unknown>,
     context: Context<State>,
-  ): Response;
+  ): Response | Promise<Response>;
 }

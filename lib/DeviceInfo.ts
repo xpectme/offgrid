@@ -1,14 +1,55 @@
-import { DeviceInfo } from "../interfaces/DeviceInfo.ts";
+// create a DeviceInfo interface
+export interface DeviceInfoPosition {
+  x: number;
+  y: number;
+  z: number;
+}
+export interface DeviceInfoRotation {
+  alpha: number;
+  beta: number;
+  gamma: number;
+}
 
-export interface DeviceInfoServiceOptions {
+export interface DeviceInfoBattery {
+  battery: number;
+  charging: boolean;
+}
+
+export interface DeviceInfoNetwork {
+  type: string;
+  downlink: number;
+  downlinkMax: number;
+  effectiveType: string;
+  rtt: number;
+  saveData: boolean;
+}
+
+export interface DeviceInfoData {
+  gps: GeolocationCoordinates | null;
+  motion: {
+    acceleration: DeviceInfoPosition | null;
+    accelerationIncludingGravity: DeviceInfoPosition | null;
+    rotationRate: DeviceInfoRotation | null;
+    interval: number;
+    speed: number | null;
+    speedGravity: number | null;
+  };
+  orientation: DeviceInfoRotation | null;
+  onlineState: boolean;
+  battery: DeviceInfoBattery | null;
+  network: DeviceInfoNetwork | null;
+}
+
+export interface DeviceInfoOptions {
   broadcastInterval: number;
   gps: PositionOptions;
 }
 
-export class DeviceInfoService {
-  #broadcast = new BroadcastChannel("device-info");
+export class DeviceInfo {
+  #running = false;
+  #broadcast: BroadcastChannel;
 
-  #deviceInfo: DeviceInfo = {
+  #data: DeviceInfoData = {
     gps: null,
     motion: {
       acceleration: null,
@@ -23,11 +64,11 @@ export class DeviceInfoService {
     battery: null,
     network: null,
   };
-  get deviceInfo(): DeviceInfo {
-    return this.#deviceInfo;
+  get data(): DeviceInfoData {
+    return this.#data;
   }
 
-  #options: DeviceInfoServiceOptions = {
+  #options: DeviceInfoOptions = {
     broadcastInterval: 100,
     gps: {
       enableHighAccuracy: true,
@@ -40,12 +81,13 @@ export class DeviceInfoService {
   #gpsWatchId: number | null = null;
   #broadcastIntervalId: number | null = null;
 
-  constructor(options: Partial<DeviceInfoServiceOptions> = {}) {
+  constructor(options: Partial<DeviceInfoOptions> = {}) {
     this.#options = { ...this.#options, ...options };
+    this.#broadcast = new BroadcastChannel("device-info");
   }
 
   #gpsSuccess = (position: GeolocationPosition) => {
-    this.#deviceInfo.gps = { ...position.coords };
+    this.#data.gps = { ...position.coords };
   };
 
   #gpsError = (error: GeolocationPositionError) => {
@@ -56,7 +98,7 @@ export class DeviceInfoService {
   #deviceOrientation = (event: DeviceOrientationEvent) => {
     // check if orientation is available
     if (event.alpha !== null && event.beta !== null && event.gamma !== null) {
-      this.#deviceInfo.orientation = {
+      this.#data.orientation = {
         // create alpha based on safari or other browsers
         // deno-lint-ignore no-explicit-any
         alpha: (event as any).webkitCompassHeading || event.alpha,
@@ -79,7 +121,7 @@ export class DeviceInfoService {
       const { x, y, z } = acceleration;
 
       if (x !== null && y !== null && z !== null) {
-        this.#deviceInfo.motion.acceleration = { x, y, z };
+        this.#data.motion.acceleration = { x, y, z };
       }
     }
 
@@ -88,7 +130,7 @@ export class DeviceInfoService {
       const { x, y, z } = accelerationIncludingGravity;
 
       if (x !== null && y !== null && z !== null) {
-        this.#deviceInfo.motion.accelerationIncludingGravity = { x, y, z };
+        this.#data.motion.accelerationIncludingGravity = { x, y, z };
       }
     }
 
@@ -97,23 +139,23 @@ export class DeviceInfoService {
       const { alpha, beta, gamma } = rotationRate;
 
       if (alpha !== null && beta !== null && gamma !== null) {
-        this.#deviceInfo.motion.rotationRate = { alpha, beta, gamma };
+        this.#data.motion.rotationRate = { alpha, beta, gamma };
       }
     }
 
     // check if interval is available
     if (interval) {
-      this.#deviceInfo.motion.interval = interval;
+      this.#data.motion.interval = interval;
     }
   };
 
   #onlineState = () => {
-    this.#deviceInfo.onlineState = navigator.onLine;
+    this.#data.onlineState = navigator.onLine;
   };
 
   #batteryChange = () => {
     if (this.#battery) {
-      this.#deviceInfo.battery = {
+      this.#data.battery = {
         battery: this.#battery.level,
         charging: this.#battery.charging,
       };
@@ -121,10 +163,14 @@ export class DeviceInfoService {
   };
 
   #connectionChange = () => {
-    this.#deviceInfo.network = { ...navigator.connection };
+    this.#data.network = { ...navigator.connection };
   };
 
   start() {
+    if (this.#running) {
+      return;
+    }
+
     // watch the GPS position
     this.#gpsWatchId = navigator.geolocation.watchPosition(
       this.#gpsSuccess,
@@ -147,7 +193,7 @@ export class DeviceInfoService {
     if ("getBattery" in globalThis.navigator) {
       globalThis.navigator.getBattery().then((battery) => {
         this.#battery = battery;
-        this.#deviceInfo.battery = {
+        this.#data.battery = {
           battery: battery.level,
           charging: battery.charging,
         };
@@ -164,13 +210,21 @@ export class DeviceInfoService {
       navigator.connection.addEventListener("change", this.#connectionChange);
     }
 
-    // broadcast the device info
+    // broadcast the device info data
     this.#broadcastIntervalId = setInterval(() => {
-      this.#broadcast.postMessage(this.#deviceInfo);
+      this.#broadcast.postMessage(this.#data);
     }, this.#options.broadcastInterval);
+
+    this.#running = true;
   }
 
   stop() {
+    if (!this.#running) {
+      return;
+    }
+
+    this.#running = false;
+
     // stop watching the GPS position
     if (this.#gpsWatchId !== null) {
       navigator.geolocation.clearWatch(this.#gpsWatchId);
@@ -222,6 +276,5 @@ export class DeviceInfoService {
   }
 }
 
-export function deviceBroadcast(options?: Partial<DeviceInfoServiceOptions>) {
-  return new DeviceInfoService(options);
-}
+export const deviceInfo = new DeviceInfo();
+export default deviceInfo;

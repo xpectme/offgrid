@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Offgrid Example</title>
+</head>
+
+<body>
+  <h1>Offgrid Service Example</h1>
+  <p>
+    This is an example of how to use the Offgrid service.
+  </p>
+
+
+  <script>
+    // add service worker
+    if ('serviceWorker' in navigator) {
+      globalThis.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(function (registration) {
+            console.log('Service Worker Registered');
+            if (registration.installing) {
+              console.log('Service Worker Installing');
+            } else if (registration.waiting) {
+              console.log('Service Worker Installed');
+            } else if (registration.active) {
+              console.log('Service Worker Active');
+            }
+          })
+          .catch(function (err) {
+            console.log('Service Worker Failed to Register', err);
+          });
+      })
+    }
+  </script>
+</body>
+
+</html>
