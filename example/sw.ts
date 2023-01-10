@@ -1,13 +1,27 @@
-import { idbx } from "../deps.ts";
-import { SyncDB } from "../lib/SyncDB.ts";
+import createApplication from "../lib/Application.ts";
+import { Context } from "../lib/application/Context.ts";
 
-const DB_VERSION = 1;
-const CACHE_VERSION = "v1";
+const app = createApplication();
 
-const dbreq = idbx.open("testdb", DB_VERSION);
+app.get("/example/test", (context: Context) => {
+  context.render("templates/test.html", {
+    title: "Hello, world!",
+    content: "This is a text.",
+    url: "/example/test2",
+  });
+});
 
-dbreq.upgrade((event) => {
-  const target = event.target as IDBOpenDBRequest;
-  const db = target.result;
-  SyncDB.createStore(db, "test");
+app.get("/example/test2", (context: Context) => {
+  context.response.headers = new Headers({
+    "Content-Type": "text/html",
+  });
+  context.render("templates/test.html", {
+    title: "Hello, universe!",
+    content: "Some other text.",
+    url: "/example/test",
+  });
+});
+
+globalThis.addEventListener("fetch", (event) => {
+  app.listen(event);
 });

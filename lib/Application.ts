@@ -5,10 +5,21 @@ import { HttpError } from "./application/HttpError.ts";
 import { Renderer } from "./application/Renderer.ts";
 import { Status } from "./application/Status.ts";
 
+declare global {
+  interface Router {
+    get(path: string, handler: Handler): void;
+    post(path: string, handler: Handler): void;
+    put(path: string, handler: Handler): void;
+    delete(path: string, handler: Handler): void;
+    patch(path: string, handler: Handler): void;
+  }
+}
+
 export class Application extends Router {
   #errorRoutes = new Map<Status, Handler>();
   #renderer!: Renderer;
   #logger = console;
+  #appState: Record<string, unknown> = {};
 
   debug: (...args: unknown[]) => void;
   info: (...args: unknown[]) => void;
@@ -30,6 +41,10 @@ export class Application extends Router {
     this.warn = log("warn");
     this.error = log("error");
     this.trace = log("trace");
+  }
+
+  set(prop: string, value: unknown) {
+    this.#appState[prop] = value;
   }
 
   setLogger(logger: Console) {
@@ -54,13 +69,14 @@ export class Application extends Router {
 
     if (match) {
       const context = new Context(match.params, request, this.#renderer);
+      context.state = this.#appState;
       event.respondWith((async () => {
         try {
           this.info(`DONE: ${match.method} ${match.path}`, match.params);
 
           // call the route handler
-          const response = await match.handler(context);
-          return response;
+          await match.handler(context);
+          return context.getResponse();
         } catch (error) {
           this.warn(`FAIL: ${match.method} ${match.path}`, match.params);
 
@@ -76,7 +92,8 @@ export class Application extends Router {
 
             // call the handler
             try {
-              return await handler(context);
+              await handler(context);
+              return context.getResponse();
             } catch (error) {
               this.error(`Error handler failed to respond!`);
               this.trace(error);

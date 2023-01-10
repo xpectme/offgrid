@@ -1,12 +1,14 @@
 import { Context } from "./Context.ts";
 import { Status } from "./Status.ts";
 
-export function rendererDefault<State>(
+export async function rendererDefault<State>(
   template: string,
   data: Record<string, unknown>,
   context: Context<State>,
 ) {
-  const result = template.replace(/\${([^}]+)}/g, (_, key) => {
+  const response = await fetch(template);
+  const html = await response.text();
+  const result = html.replace(/\${([^}]+)}/g, (_, key) => {
     const replacement = data[key as keyof typeof data] as string;
 
     // sanitize replacement for HTML

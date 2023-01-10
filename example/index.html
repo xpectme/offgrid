@@ -13,12 +13,22 @@
     This is an example of how to use the Offgrid service.
   </p>
 
+  <div id="message">
+    <h2>Eine beliebige Nachricht</h2>
+    <p>
+      Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quod.
+    </p>
+    <button type="button" hx-get="/example/test" hx-target="#message" hx-swap="outerHTML">change message</button>
+  </div>
 
+  <script src="https://unpkg.com/htmx.org@1.8.4"
+    integrity="sha384-wg5Y/JwF7VxGk4zLsJEcAojRtlVp1FKKdGy1qN+OMtdq72WRvX/EdRdqg/LOhYeV"
+    crossorigin="anonymous"></script>
   <script>
     // add service worker
     if ('serviceWorker' in navigator) {
       globalThis.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
+        navigator.serviceWorker.register('/example/sw.js')
           .then(function (registration) {
             console.log('Service Worker Registered');
             if (registration.installing) {

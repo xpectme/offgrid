@@ -11,6 +11,8 @@ export class Context<State = Record<string, unknown>> {
   state = {} as State;
   #renderer: Renderer;
 
+  #response!: Promise<Response>;
+
   constructor(
     params: Record<string, string>,
     request: Request,
@@ -21,8 +23,12 @@ export class Context<State = Record<string, unknown>> {
     this.#renderer = renderer ?? rendererDefault;
   }
 
-  render(template: string, data: Record<string, unknown> = {}): Response | Promise<Response> {
-    return this.#renderer(template, data, this);
+  getResponse(): Promise<Response> {
+    return this.#response ?? Promise.resolve(new Response());
+  }
+
+  render(template: string, data: Record<string, unknown> = {}): void {
+    this.#response = this.#renderer(template, data, this);
   }
 
   assert(condition: boolean, status: Status, message?: string) {
