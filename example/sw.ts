@@ -7,7 +7,6 @@ app.get("/example/test", (context: Context) => {
   context.render("templates/test.html", {
     title: "Hello, world!",
     content: "This is a text.",
-    url: "/example/test2",
   });
 });
 
@@ -18,7 +17,6 @@ app.get("/example/test2", (context: Context) => {
   context.render("templates/test.html", {
     title: "Hello, universe!",
     content: "Some other text.",
-    url: "/example/test",
   });
 });
 

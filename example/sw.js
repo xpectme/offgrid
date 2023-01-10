@@ -534,8 +534,7 @@ const app = createApplication();
 app.get("/example/test", (context)=>{
     context.render("templates/test.html", {
         title: "Hello, world!",
-        content: "This is a text.",
-        url: "/example/test2"
+        content: "This is a text."
     });
 });
 app.get("/example/test2", (context)=>{
@@ -544,8 +543,7 @@ app.get("/example/test2", (context)=>{
     });
     context.render("templates/test.html", {
         title: "Hello, universe!",
-        content: "Some other text.",
-        url: "/example/test"
+        content: "Some other text."
     });
 });
 globalThis.addEventListener("fetch", (event)=>{

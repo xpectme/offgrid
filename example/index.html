@@ -18,13 +18,31 @@
     <p>
       Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quod.
     </p>
-    <button type="button" hx-get="/example/test" hx-target="#message" hx-swap="outerHTML">change message</button>
   </div>
 
-  <script src="https://unpkg.com/htmx.org@1.8.4"
-    integrity="sha384-wg5Y/JwF7VxGk4zLsJEcAojRtlVp1FKKdGy1qN+OMtdq72WRvX/EdRdqg/LOhYeV"
-    crossorigin="anonymous"></script>
+  <ul>
+    <li><a href="/example/test">Test page 1</a></li>
+    <li><a href="/example/test2">Test Page 2</a></li>
+  </ul>
+
   <script>
+    const messageEl = document.querySelector('#message');
+
+    // add event listener to button
+    document.querySelectorAll('a').forEach((el) => {
+      el.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        const url = ev.target.getAttribute('href');
+        // fetch new message
+        fetch(url)
+          .then(response => response.text())
+          .then(html => {
+            // update message
+            messageEl.innerHTML = html;
+          });
+      });
+    });
+
     // add service worker
     if ('serviceWorker' in navigator) {
       globalThis.addEventListener('load', () => {
