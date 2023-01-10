@@ -17,21 +17,15 @@ interface TestStore extends SyncInfo {
 }
 
 const createDB = () => {
-  const dbreq = indexedDB.open("testdb", 1);
+  const dbreq = idbx.open("testdb", 1);
 
-  dbreq.onupgradeneeded = (event) => {
+  dbreq.upgrade((event) => {
     const target = event.target as IDBOpenDBRequest;
     const db = target.result;
     SyncDB.createStore(db, "test");
-  };
-
-  return new Promise<IDBDatabase>((resolve) => {
-    dbreq.onsuccess = (event) => {
-      const target = event.target as IDBOpenDBRequest;
-      const db = target.result;
-      resolve(db);
-    };
   });
+
+  return dbreq.ready;
 };
 
 const clearDB = (db: IDBDatabase) => {
