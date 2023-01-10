@@ -501,16 +501,16 @@ class Application extends Router {
             event.respondWith((async ()=>{
                 try {
                     this.info(`DONE: ${match.method} ${match.path}`, match.params);
-                    await match.handler(context);
-                    return context.getResponse();
+                    const response = await match.handler(context);
+                    return response ?? context.getResponse();
                 } catch (error1) {
                     this.warn(`FAIL: ${match.method} ${match.path}`, match.params);
                     const handler = error1 instanceof HttpError ? this.errorRoutes.get(error1.status) : this.errorRoutes.get(Status.InternalServerError);
                     if (handler) {
                         context.state.error = error1;
                         try {
-                            await handler(context);
-                            return context.getResponse();
+                            const response1 = await handler(context);
+                            return response1 ?? context.getResponse();
                         } catch (error) {
                             this.error(`Error handler failed to respond!`);
                             this.trace(error);

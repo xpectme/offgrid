@@ -75,8 +75,8 @@ export class Application extends Router {
           this.info(`DONE: ${match.method} ${match.path}`, match.params);
 
           // call the route handler
-          await match.handler(context);
-          return context.getResponse();
+          const response = await match.handler(context);
+          return response ?? context.getResponse();
         } catch (error) {
           this.warn(`FAIL: ${match.method} ${match.path}`, match.params);
 
@@ -92,8 +92,8 @@ export class Application extends Router {
 
             // call the handler
             try {
-              await handler(context);
-              return context.getResponse();
+              const response = await handler(context);
+              return response ?? context.getResponse();
             } catch (error) {
               this.error(`Error handler failed to respond!`);
               this.trace(error);
